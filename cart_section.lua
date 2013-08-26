@@ -1,9 +1,14 @@
 local self = {}
 local utils = require("utils")
-local groceries = require("groceries")
+
+local groceries = nil
 
 self.size = {w = 0, h = 0}
 self.pos = {x = 0, y = 0}
+
+self.addGroceriesVar = function(_groceries)
+  groceries = _groceries
+end
 
 self.updateSizing = function(self, screen)
   self.size.w = self.cart.img:getWidth() * self.cart.size.x
@@ -87,30 +92,13 @@ end
 
 self.groceries = {}
 
-self.addGrocery = function(self)
-  table.insert(self.groceries, (function()
-
-    --[[
-    local temp = {}
-    temp.body = love.physics.newBody(self.physics.world, self.drop.pos.x, self.drop.pos.y + self.drop.img:getHeight(), "dynamic")
-    if utils.rand(2) == 1 then
-      temp.type = 'circle'
-      temp.shape = love.physics.newCircleShape(utils.rand(20) + 10)
-    else
-      temp.type = 'rect'
-      temp.shape = love.physics.newRectangleShape(utils.rand(20) + 10, utils.rand(20) + 10)
-    end
-    temp.fixture = love.physics.newFixture(temp.body, temp.shape, 1)
-    temp.fixture:setRestitution(0.3)
-    return temp
-    --]]
-    
-    return groceries:generateGrocery(
-      groceries:randomGrocery(),
+self.addGrocery = function(self, groceryType)
+  table.insert(self.groceries, 
+    groceries:generateGrocery(
+      groceryType or groceries:randomGrocery(),
       self.physics.world, self.drop.pos.x, self.drop.pos.y + self.drop.img:getHeight()
     )
-
-  end)())
+  )
 end
 
 self.draw = function(self) 
@@ -151,6 +139,13 @@ self.inCart = function(self, grocery)
      groceryY < self.size.h
 end
 
+self.offScreen = function(self, grocery)
+  local groceryX = grocery.body:getX()
+  local groceryY = grocery.body:getY()
+
+  return groceryY < self.size.h
+end
+
 self.update = function(self, dt)
   self.physics.world:update(dt)
 
@@ -166,6 +161,41 @@ self.update = function(self, dt)
       self.drop.pos.x = 0
     end
   end
+
+  for i, grocery in ipairs(self.groceries) do
+    if grocery.active then
+      if not self:offScreen(grocery) then
+        grocery.body:destroy()
+        grocery.active = false
+      end
+    end
+  end
+end
+
+self.getScore = function(self)
+  local temp = {
+    total = #self.groceries,
+    inCart = 0,
+    worth = 0,
+    damaged = 0,
+    final = 0
+  }
+  local good = false
+  for i, grocery in ipairs(self.groceries) do
+    good = false
+    if grocery.active then
+      if self:inCart(grocery) then
+        temp.inCart = temp.inCart + 1
+        temp.worth = temp.worth + grocery.worth
+        good = true
+      end
+    end
+    if not good then
+      temp.damaged = temp.damaged + grocery.worth
+    end
+  end
+  temp.final = temp.worth - temp.damaged
+  return temp
 end
 
 return self

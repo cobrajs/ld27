@@ -6,5 +6,6 @@ return {
       r = 0.4
     },
     restitution = 0.2
-  }
+  },
+  worth = 1
 }

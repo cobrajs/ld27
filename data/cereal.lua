@@ -7,6 +7,7 @@ return {
       h = 0.9
     },
     restitution = 0.2
-  }
+  },
+  worth = 5
 }
 

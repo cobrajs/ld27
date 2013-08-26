@@ -3,7 +3,22 @@ local self = {}
 local utils = require("utils")
 
 self.grocerySections = {}
-self.addGrocerySection = function(x, y, w, h, groceryType)
+self.addGrocerySection = function(self, x, y, w, h, groceryType, sectionType)
+  table.insert(self.grocerySections, {
+    x = x, y = y, w = w, h = h, type = groceryType, sectionType = sectionType
+  })
+end
+
+self.grabGrocery = function(self, wallX, wallY, centerX, centerY)
+  for i, section in ipairs(self.grocerySections) do
+    local useX = section.sectionType == 'wall' and wallX or centerX
+    local useY = section.sectionType == 'wall' and wallY or centerY
+    if useX > section.x and useX < section.x + section.w and
+       useY > section.y and useY < section.y + section.h then
+       return section.type
+     end
+  end
+  return nil
 end
 
 self.groceryTypes = {
@@ -38,9 +53,6 @@ self.generateGrocery = function(self, groceryType, world, x, y)
     active = true
   }
 
-  print(groceryType)
-  print(data.physics.size.w, data.physics.size.h, data.physics.size.r)
-
   temp.body = love.physics.newBody(world, x, y, "dynamic")
   temp.type = data.physics.type
   if data.physics.type == 'circle' then
@@ -52,6 +64,7 @@ self.generateGrocery = function(self, groceryType, world, x, y)
   temp.fixture:setRestitution(data.physics.restitution)
   temp.groceryType = groceryType
   temp.img = self.images[groceryType]
+  temp.worth = data.worth
 
   return temp
 end

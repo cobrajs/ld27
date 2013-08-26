@@ -1,6 +1,17 @@
 local self = {}
 local utils = require("utils")
 
+local groceries = nil
+
+self.addGroceriesVar = function(_groceries)
+  groceries = _groceries
+end
+
+local key_handled = {
+  x = true,
+  c = true
+}
+
 self.size = {w = 0, h = 0}
 self.pos = {x = 0, y = 0}
 
@@ -37,6 +48,28 @@ self.cart_guy = (function()
 
   return temp
 end)()
+
+self.setupGrocerySections = function(self, groceries)
+  -- Side shelves
+  groceries:addGrocerySection(0, 0, 164, 50, "milk", "wall")
+  groceries:addGrocerySection(0, 0, 54, 200, "milk", "wall")
+
+  groceries:addGrocerySection(0, 200, 54, 300, "donut", "wall")
+
+  groceries:addGrocerySection(165, 0, 199, 50, "fish", "wall")
+
+  groceries:addGrocerySection(365, 0, 195, 50, "chicken", "wall")
+  groceries:addGrocerySection(493, 0, 60, 159, "chicken", "wall")
+
+  groceries:addGrocerySection(493, 160, 60, 340, "apple", "wall")
+
+  -- Middle shelves
+  groceries:addGrocerySection(160, 160, 33, 230, "chips", "center")
+  groceries:addGrocerySection(193, 160, 33, 230, "can", "center")
+
+  groceries:addGrocerySection(326, 160, 33, 230, "cereal", "center")
+  groceries:addGrocerySection(359, 160, 33, 230, "yogurt", "center")
+end
 
 self.market = {}
 self.market.shelves = {}
@@ -109,15 +142,15 @@ local checkShelves = function(newX, newY, newRot)
   return true
 end
 
-self.update = function(self, dt)
+self.update = function(self, dt, started)
   if love.keyboard.isDown("left") then
-    local newAngle = (self.cart_guy.rot - 4) % 360 
+    local newAngle = (self.cart_guy.rot - 5) % 360 
     if not checkShelves(self.cart_guy.pos.x, self.cart_guy.pos.y, newAngle) then
       newAngle = self.cart_guy.rot
     end
     self.cart_guy.rot = newAngle 
   elseif love.keyboard.isDown("right") then
-    local newAngle = (self.cart_guy.rot + 4) % 360 
+    local newAngle = (self.cart_guy.rot + 5) % 360 
     if not checkShelves(self.cart_guy.pos.x, self.cart_guy.pos.y, newAngle) then
       newAngle = self.cart_guy.rot
     end
@@ -132,12 +165,44 @@ self.update = function(self, dt)
     self.cart_guy.speed = 0
   end
 
-  if love.keyboard.isDown("z") then
-    self.cart_guy.current = 'left'
-  elseif love.keyboard.isDown("c") then
-    self.cart_guy.current = 'right'
-  else
-    self.cart_guy.current = 'normal'
+  if started then
+    if love.keyboard.isDown("x") then
+      if key_handled.x then
+        self.cart_guy.current = 'left'
+        key_handled.x = false
+        local angle = math.rad((self.cart_guy.rot - 90) % 360)
+        local groceryType = groceries:grabGrocery(
+          self.cart_guy.pos.x + math.cos(angle) * 70,
+          self.cart_guy.pos.y + math.sin(angle) * 70,
+          self.cart_guy.pos.x + math.cos(angle) * 40,
+          self.cart_guy.pos.y + math.sin(angle) * 40
+        )
+        if groceryType then
+          self:grabGrocery(groceryType)
+        end
+      end
+      key_handled.c = true
+    elseif love.keyboard.isDown("c") then
+      if key_handled.c then
+        self.cart_guy.current = 'right'
+        key_handled.c = false
+        local angle = math.rad((self.cart_guy.rot + 90) % 360)
+        local groceryType = groceries:grabGrocery(
+          self.cart_guy.pos.x + math.cos(angle) * 70,
+          self.cart_guy.pos.y + math.sin(angle) * 70,
+          self.cart_guy.pos.x + math.cos(angle) * 40,
+          self.cart_guy.pos.y + math.sin(angle) * 40
+        )
+        if groceryType then
+          self:grabGrocery(groceryType)
+        end
+      end
+      key_handled.x = true
+    else
+      self.cart_guy.current = 'normal'
+      key_handled.x = true
+      key_handled.c = true
+    end
   end
 
   if self.cart_guy.speed ~= 0 then
